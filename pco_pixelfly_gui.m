@@ -421,7 +421,7 @@ end
                
 %open camera
 [ errorCode_pf, handles.out_ptr_pf, handles.sBufNr_pf, im_ptr_pf, ev_ptr_pf ] = ...
-    pco_pf_open(str2num(get(handles.exposureTimeEdit2, 'String')) * 1000,0, ...
+    pco_pf_open(str2num(get(handles.exposureTimeEdit2, 'String')) * 1000,1, ...
     handles.binNumFlashVal, handles.setroix0, handles.setroix1, ...
     handles.setroiy0, handles.setroiy1, get(handles.IRSensitivityEdit, 'Value'),...
     handles.conversionFlashVal);
@@ -439,8 +439,13 @@ figure(gcf)
 
 axes(handles.cameraAxes);
 image_stack = zeros(((handles.setroix1-handles.setroix0)+1),((handles.setroiy1-handles.setroiy0)+1))';
-%take  2 snapshots
 
+%start arduino
+arduinoUno = arduino('COM6','Uno');
+writeDigitalPin(arduinoUno,12,1)
+writeDigitalPin(arduinoUno,13,0)
+pause(1)
+%take  2 snapshots
 
 image_stack = pco_pf_getsnapshot(handles.out_ptr_pf, handles.sBufNr_pf, im_ptr_pf, ev_ptr_pf, handles.binNumFlashVal, handles.setroix0, handles.setroix1, handles.setroiy0, handles.setroiy1);
 pco_errdisp('pco_edge_getsnapshot', errorCode_pf);
@@ -468,6 +473,12 @@ drawnow
 axes(handles.cameraAxes2);
 image_stack2 = zeros(((handles.setroix1-handles.setroix0)+1),((handles.setroiy1-handles.setroiy0)+1))';
 
+%switch LED
+writeDigitalPin(arduinoUno,13,1)
+writeDigitalPin(arduinoUno,12,0)
+%LED_right =  readDigitalPin(arduinoUno, 'D13')
+%LED_left =  readDigitalPin(arduinoUno, 'D12')
+
 %take snapshot
 image_stack2 = pco_pf_getsnapshot(handles.out_ptr_pf, handles.sBufNr_pf, im_ptr_pf, ev_ptr_pf, handles.binNumFlashVal, handles.setroix0, handles.setroix1, handles.setroiy0, handles.setroiy1);
 pco_errdisp('pco_edge_getsnapshot', errorCode_pf);
@@ -493,6 +504,8 @@ guidata(hObject,handles)
 drawnow
 
 outputSingleScan(handles.s,[0 0])
+clear arduinoUno
+
 
 %close camera
 pco_edge_close(handles.out_ptr_pf, handles.sBufNr_pf);
